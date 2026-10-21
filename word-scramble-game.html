@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Word Scramble Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #eaf6ff;
+        --bg-2: #fdf3ff;
+        --card: #ffffff;
+        --ink: #22304a;
+        --ink-soft: #5a6b8c;
+        --accent: #ff8a3d;
+        --accent-deep: #e56f1e;
+        --good: #2fbf71;
+        --good-deep: #1f9d57;
+        --tile: #fff4d6;
+        --tile-border: #f5b942;
+        --tile-ink: #8a5a00;
+        --slot: #eef3fb;
+        --slot-border: #b9cbe8;
+        --shadow: 0 10px 30px rgba(34, 48, 74, .14);
+        --radius: 22px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #131c30;
+          --bg-2: #1d1430;
+          --card: #1f2a44;
+          --ink: #f2f6ff;
+          --ink-soft: #a9b8d4;
+          --accent: #ffa25e;
+          --accent-deep: #ff8a3d;
+          --good: #3ed684;
+          --good-deep: #2fbf71;
+          --tile: #4a3a12;
+          --tile-border: #f5b942;
+          --tile-ink: #ffd97a;
+          --slot: #2a3a5c;
+          --slot-border: #46608f;
+          --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+        }
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Nunito", system-ui, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(160deg, var(--bg), var(--bg-2));
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 18px 14px 40px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .wrap { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 16px; }
+
+      header.top {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      }
+      h1 {
+        font-family: "Baloo 2", "Nunito", sans-serif;
+        font-size: clamp(1.5rem, 5.5vw, 2.1rem);
+        margin: 0; line-height: 1.1; letter-spacing: .2px;
+      }
+      h1 .scr { color: var(--accent-deep); }
+      .stars-box {
+        display: flex; align-items: center; gap: 6px;
+        background: var(--card); border-radius: 999px; padding: 7px 14px 7px 10px;
+        box-shadow: var(--shadow); font-weight: 800; font-size: 1.05rem; white-space: nowrap;
+      }
+      .stars-box svg { width: 22px; height: 22px; }
+
+      .progress-row { display: flex; align-items: center; gap: 10px; }
+      .progress-label { font-weight: 800; color: var(--ink-soft); font-size: .95rem; white-space: nowrap; }
+      .progress-track { flex: 1; height: 12px; background: var(--slot); border-radius: 999px; overflow: hidden; }
+      .progress-fill { height: 100%; width: 0%; background: var(--good); border-radius: 999px; transition: width .5s ease; }
+
+      .card {
+        background: var(--card); border-radius: var(--radius);
+        box-shadow: var(--shadow); padding: 22px 18px 26px;
+        display: flex; flex-direction: column; align-items: center; gap: 18px;
+        position: relative; overflow: hidden;
+      }
+      .pic-stage {
+        width: min(240px, 62vw); aspect-ratio: 1 / 1;
+        display: grid; place-items: center;
+      }
+      .pic-stage svg { width: 100%; height: 100%; }
+      .pop { animation: pop .45s ease; }
+      @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+      .hear-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        border: none; cursor: pointer; font-family: inherit; font-weight: 800; font-size: .95rem;
+        background: var(--slot); color: var(--ink); border-radius: 999px; padding: 8px 16px;
+      }
+      .hear-btn:active { transform: scale(.96); }
+      .hear-btn svg { width: 18px; height: 18px; }
+
+      .instruction { margin: 0; font-weight: 700; color: var(--ink-soft); text-align: center; font-size: 1rem; }
+
+      .slots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; min-height: 62px; }
+      .slot {
+        width: 54px; height: 62px; border-radius: 14px;
+        background: var(--slot); border: 3px dashed var(--slot-border);
+        display: grid; place-items: center;
+        font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.8rem;
+        color: var(--ink); cursor: pointer; user-select: none;
+        transition: transform .12s ease, background .2s ease, border-color .2s ease;
+      }
+      .slot.filled { border-style: solid; border-color: var(--tile-border); background: var(--tile); color: var(--tile-ink); }
+      .slot:active { transform: scale(.94); }
+      .slots.shake { animation: shake .45s ease; }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-9px); } 40% { transform: translateX(9px); }
+        60% { transform: translateX(-6px); } 80% { transform: translateX(6px); }
+      }
+      .slots.win .slot { background: #d9f7e7; border-color: var(--good); color: var(--good-deep); }
+      @media (prefers-color-scheme: dark) {
+        .slots.win .slot { background: #14532d; color: #a7f3c9; }
+      }
+
+      .tiles { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; min-height: 64px; }
+      .tile {
+        width: 56px; height: 64px; border-radius: 14px; border: none; cursor: pointer;
+        background: var(--tile); border-bottom: 5px solid var(--tile-border);
+        font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.9rem; color: var(--tile-ink);
+        display: grid; place-items: center; user-select: none;
+        transition: transform .12s ease, opacity .15s ease;
+        touch-action: manipulation;
+      }
+      .tile:active { transform: scale(.92); }
+      .tile.used { opacity: 0; pointer-events: none; transform: scale(.6); }
+
+      .message { min-height: 1.6em; font-weight: 800; font-size: 1.15rem; text-align: center; margin: 0; }
+      .message.good { color: var(--good-deep); }
+      .message.try { color: var(--accent-deep); }
+
+      .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+      .btn {
+        border: none; cursor: pointer; font-family: "Baloo 2", sans-serif; font-weight: 700;
+        border-radius: 999px; padding: 13px 26px; font-size: 1.1rem;
+        transition: transform .12s ease; touch-action: manipulation;
+      }
+      .btn:active { transform: scale(.95); }
+      .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 0 var(--accent-deep); font-size: 1.25rem; padding: 14px 34px; }
+      .btn-primary:active { box-shadow: 0 2px 0 var(--accent-deep); }
+      .btn-ghost { background: var(--slot); color: var(--ink); }
+      .btn[hidden] { display: none; }
+
+      .finish { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 0 4px; }
+      .finish .big { font-family: "Baloo 2", sans-serif; font-size: 2rem; font-weight: 800; margin: 0; }
+      .finish p { margin: 0; color: var(--ink-soft); font-weight: 700; font-size: 1.05rem; }
+      .finish .star-row { display: flex; gap: 4px; }
+      .finish .star-row svg { width: 34px; height: 34px; }
+
+      #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+      .confetto {
+        position: absolute; top: -4vh; border-radius: 3px;
+        animation: fall linear forwards;
+      }
+      @keyframes fall {
+        to { transform: translateY(112vh) rotate(720deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pop, .slots.shake, .confetto { animation: none !important; }
+        .progress-fill, .tile, .slot { transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>Word <span class="scr">Scramble</span></h1>
+        <div class="stars-box" aria-label="Stars earned">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f5b942" d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>
+          <span id="starCount">0</span>
+        </div>
+      </header>
+
+      <div class="progress-row">
+        <span class="progress-label" id="progressLabel">Word 1 of 12</span>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <section class="card" id="gameCard" aria-live="polite">
+        <div class="pic-stage" id="picStage"></div>
+
+        <button class="hear-btn" id="hearBtn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4zm13.5 3a3.5 3.5 0 0 0-2-3.15v6.3a3.5 3.5 0 0 0 2-3.15zM13 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+          Hear it
+        </button>
+
+        <p class="instruction">Look at the picture — tap the letters to spell the word!</p>
+
+        <div class="slots" id="slots"></div>
+        <div class="tiles" id="tiles"></div>
+
+        <p class="message" id="message"></p>
+
+        <div class="controls">
+          <button class="btn btn-ghost" id="clearBtn" type="button">Start over</button>
+          <button class="btn btn-ghost" id="shuffleBtn" type="button">Mix letters</button>
+          <button class="btn btn-primary" id="nextBtn" type="button" hidden>Next word →</button>
+        </div>
+      </section>
+
+      <section class="card finish" id="finishCard" hidden>
+        <div class="star-row" id="finishStars"></div>
+        <p class="big">You did it! 🎉</p>
+        <p id="finishText">You unscrambled every word. Great job!</p>
+        <button class="btn btn-primary" id="againBtn" type="button">Play again</button>
+      </section>
+    </div>
+
+    <div id="confetti" aria-hidden="true"></div>
+
+    <script>
+      // ---------- Picture drawings (simple flat SVG scenes) ----------
+      var PICS = {
+        CAT: '<svg viewBox="0 0 200 200" role="img" aria-label="A cat"><circle cx="100" cy="112" r="58" fill="#f5a94b"/><path d="M52 78 L44 34 L82 56 Z" fill="#f5a94b"/><path d="M148 78 L156 34 L118 56 Z" fill="#f5a94b"/><path d="M55 70 L50 46 L72 58 Z" fill="#f7c8d8"/><path d="M145 70 L150 46 L128 58 Z" fill="#f7c8d8"/><circle cx="78" cy="106" r="7" fill="#22304a"/><circle cx="122" cy="106" r="7" fill="#22304a"/><path d="M94 124 Q100 118 106 124 Q100 132 94 124Z" fill="#e2607a"/><path d="M100 128 Q100 138 88 138 M100 128 Q100 138 112 138" stroke="#22304a" stroke-width="3.5" fill="none" stroke-linecap="round"/><g stroke="#22304a" stroke-width="3" stroke-linecap="round"><path d="M40 116 L66 120"/><path d="M42 134 L66 130"/><path d="M160 116 L134 120"/><path d="M158 134 L134 130"/></g></svg>',
+        DOG: '<svg viewBox="0 0 200 200" role="img" aria-label="A dog"><ellipse cx="46" cy="98" rx="18" ry="38" fill="#8a5a2b"/><ellipse cx="154" cy="98" rx="18" ry="38" fill="#8a5a2b"/><circle cx="100" cy="104" r="58" fill="#c98d4e"/><ellipse cx="100" cy="128" rx="26" ry="20" fill="#f3ddba"/><circle cx="100" cy="118" r="9" fill="#22304a"/><path d="M100 127 L100 136 M100 136 Q100 144 90 144 M100 136 Q100 144 110 144" stroke="#22304a" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="76" cy="94" r="7" fill="#22304a"/><circle cx="124" cy="94" r="7" fill="#22304a"/><path d="M112 148 Q100 158 92 150" stroke="#e2607a" stroke-width="7" fill="none" stroke-linecap="round"/></svg>',
+        PIG: '<svg viewBox="0 0 200 200" role="img" aria-label="A pig"><path d="M56 66 L48 30 L88 44 Z" fill="#f49ac1"/><path d="M144 66 L152 30 L112 44 Z" fill="#f49ac1"/><circle cx="100" cy="106" r="60" fill="#f7b1cd"/><ellipse cx="100" cy="118" rx="24" ry="17" fill="#f49ac1"/><circle cx="91" cy="118" r="4.5" fill="#c2537f"/><circle cx="109" cy="118" r="4.5" fill="#c2537f"/><circle cx="74" cy="90" r="6.5" fill="#22304a"/><circle cx="126" cy="90" r="6.5" fill="#22304a"/><circle cx="56" cy="122" r="9" fill="#f28bb4" opacity=".55"/><circle cx="144" cy="122" r="9" fill="#f28bb4" opacity=".55"/></svg>',
+        FISH: '<svg viewBox="0 0 200 200" role="img" aria-label="A fish"><path d="M128 100 L178 62 L178 138 Z" fill="#ff8a3d"/><ellipse cx="92" cy="100" rx="62" ry="42" fill="#ffb03a"/><path d="M84 62 Q104 40 122 60 Q102 66 84 62Z" fill="#ff8a3d"/><circle cx="62" cy="92" r="7" fill="#22304a"/><circle cx="64.5" cy="89.5" r="2.5" fill="#fff"/><path d="M44 112 Q58 120 70 112" stroke="#22304a" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M96 78 Q108 100 96 122" stroke="#ff8a3d" stroke-width="6" fill="none" stroke-linecap="round"/></svg>',
+        BIRD: '<svg viewBox="0 0 200 200" role="img" aria-label="A bird"><ellipse cx="100" cy="104" rx="52" ry="56" fill="#4db2ff"/><circle cx="100" cy="58" r="34" fill="#4db2ff"/><ellipse cx="100" cy="128" rx="30" ry="30" fill="#cfeaff"/><ellipse cx="56" cy="106" rx="14" ry="26" fill="#2f8fe0" transform="rotate(18 56 106)"/><path d="M128 56 L156 66 L128 76 Z" fill="#ffb03a"/><circle cx="110" cy="52" r="5.5" fill="#22304a"/><path d="M92 160 L92 178 M110 160 L110 178" stroke="#ffb03a" stroke-width="5" stroke-linecap="round"/><path d="M84 178 L100 178 M102 178 L118 178" stroke="#ffb03a" stroke-width="5" stroke-linecap="round"/></svg>',
+        FROG: '<svg viewBox="0 0 200 200" role="img" aria-label="A frog"><circle cx="64" cy="62" r="20" fill="#57c84d"/><circle cx="136" cy="62" r="20" fill="#57c84d"/><circle cx="64" cy="60" r="12" fill="#fff"/><circle cx="136" cy="60" r="12" fill="#fff"/><circle cx="64" cy="62" r="6" fill="#22304a"/><circle cx="136" cy="62" r="6" fill="#22304a"/><ellipse cx="100" cy="118" rx="62" ry="50" fill="#57c84d"/><ellipse cx="100" cy="136" rx="36" ry="26" fill="#d8f5c8"/><path d="M66 118 Q100 142 134 118" stroke="#22304a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="56" cy="112" r="8" fill="#ff9db1" opacity=".7"/><circle cx="144" cy="112" r="8" fill="#ff9db1" opacity=".7"/></svg>',
+        SUN: '<svg viewBox="0 0 200 200" role="img" aria-label="The sun"><g stroke="#ffb03a" stroke-width="11" stroke-linecap="round"><path d="M100 12 L100 34"/><path d="M100 166 L100 188"/><path d="M12 100 L34 100"/><path d="M166 100 L188 100"/><path d="M38 38 L54 54"/><path d="M146 146 L162 162"/><path d="M162 38 L146 54"/><path d="M54 146 L38 162"/></g><circle cx="100" cy="100" r="46" fill="#ffd23e"/><circle cx="84" cy="94" r="6" fill="#22304a"/><circle cx="116" cy="94" r="6" fill="#22304a"/><path d="M82 112 Q100 128 118 112" stroke="#22304a" stroke-width="4.5" fill="none" stroke-linecap="round"/><circle cx="68" cy="108" r="7" fill="#ff9db1" opacity=".65"/><circle cx="132" cy="108" r="7" fill="#ff9db1" opacity=".65"/></svg>',
+        STAR: '<svg viewBox="0 0 200 200" role="img" aria-label="A star"><path d="M100 18 L124 72 L182 78 L136 116 L150 174 L100 142 L50 174 L64 116 L18 78 L76 72 Z" fill="#ffd23e" stroke="#f5b942" stroke-width="6" stroke-linejoin="round"/><circle cx="86" cy="98" r="6" fill="#22304a"/><circle cx="114" cy="98" r="6" fill="#22304a"/><path d="M86 116 Q100 128 114 116" stroke="#22304a" stroke-width="4.5" fill="none" stroke-linecap="round"/></svg>',
+        APPLE: '<svg viewBox="0 0 200 200" role="img" aria-label="An apple"><path d="M100 66 C84 44 52 48 40 78 C28 108 48 158 74 168 C88 173 94 166 100 166 C106 166 112 173 126 168 C152 158 172 108 160 78 C148 48 116 44 100 66Z" fill="#ef4756"/><path d="M100 62 C100 44 108 30 124 24" stroke="#8a5a2b" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M104 40 C124 22 150 30 152 34 C150 52 126 60 104 40Z" fill="#57c84d"/><ellipse cx="66" cy="94" rx="12" ry="20" fill="#ff8b96" opacity=".7" transform="rotate(-16 66 94)"/></svg>',
+        CAKE: '<svg viewBox="0 0 200 200" role="img" aria-label="A cake"><rect x="38" y="118" width="124" height="52" rx="10" fill="#8a5a2b"/><rect x="38" y="118" width="124" height="18" rx="9" fill="#f7c8d8"/><rect x="56" y="78" width="88" height="42" rx="9" fill="#b5793d"/><rect x="56" y="78" width="88" height="15" rx="7" fill="#fff"/><g><rect x="72" y="48" width="7" height="26" rx="3" fill="#4db2ff"/><rect x="96" y="48" width="7" height="26" rx="3" fill="#ef4756"/><rect x="120" y="48" width="7" height="26" rx="3" fill="#57c84d"/><path d="M75.5 34 C80 42 80 46 75.5 48 C71 46 71 42 75.5 34Z" fill="#ffb03a"/><path d="M99.5 34 C104 42 104 46 99.5 48 C95 46 95 42 99.5 34Z" fill="#ffb03a"/><path d="M123.5 34 C128 42 128 46 123.5 48 C119 46 119 42 123.5 34Z" fill="#ffb03a"/></g><circle cx="66" cy="146" r="5" fill="#ffd23e"/><circle cx="100" cy="152" r="5" fill="#ffd23e"/><circle cx="134" cy="146" r="5" fill="#ffd23e"/></svg>',
+        BUS: '<svg viewBox="0 0 200 200" role="img" aria-label="A bus"><rect x="26" y="52" width="148" height="86" rx="16" fill="#ffd23e"/><rect x="26" y="98" width="148" height="12" fill="#f5b942"/><g fill="#bde3ff"><rect x="38" y="64" width="26" height="24" rx="5"/><rect x="72" y="64" width="26" height="24" rx="5"/><rect x="106" y="64" width="26" height="24" rx="5"/><rect x="140" y="64" width="22" height="24" rx="5"/></g><circle cx="140" cy="122" r="5" fill="#fff3b0"/><circle cx="60" cy="122" r="5" fill="#fff3b0"/><circle cx="62" cy="142" r="17" fill="#22304a"/><circle cx="62" cy="142" r="8" fill="#aab8cc"/><circle cx="138" cy="142" r="17" fill="#22304a"/><circle cx="138" cy="142" r="8" fill="#aab8cc"/></svg>',
+        BALL: '<svg viewBox="0 0 200 200" role="img" aria-label="A ball"><circle cx="100" cy="100" r="70" fill="#ef4756"/><path d="M100 30 A70 70 0 0 1 100 170 A88 88 0 0 0 100 30Z" fill="#fff"/><path d="M30 100 A70 70 0 0 0 170 100" stroke="#fff" stroke-width="0" fill="none"/><path d="M36 74 A70 70 0 0 1 164 74 L164 88 A84 84 0 0 0 36 88Z" fill="#4db2ff" opacity=".9"/><path d="M36 126 A70 70 0 0 0 164 126 L164 112 A84 84 0 0 1 36 112Z" fill="#4db2ff" opacity=".9"/><circle cx="100" cy="100" r="70" fill="none" stroke="#d63a47" stroke-width="4"/></svg>'
+      };
+
+      var WORDS = ["CAT", "DOG", "PIG", "FISH", "BIRD", "FROG", "SUN", "STAR", "APPLE", "CAKE", "BUS", "BALL"];
+      var PRAISE = ["Great job!", "You did it!", "Awesome!", "Super work!", "Way to go!", "Fantastic!"];
+
+      var idx = 0;          // current word index
+      var stars = 0;
+      var placed = [];      // tile ids placed, in slot order
+      var solved = false;
+      var audioCtx = null;
+
+      var picStage = document.getElementById("picStage");
+      var slotsEl = document.getElementById("slots");
+      var tilesEl = document.getElementById("tiles");
+      var messageEl = document.getElementById("message");
+      var nextBtn = document.getElementById("nextBtn");
+      var starCount = document.getElementById("starCount");
+      var progressLabel = document.getElementById("progressLabel");
+      var progressFill = document.getElementById("progressFill");
+      var gameCard = document.getElementById("gameCard");
+      var finishCard = document.getElementById("finishCard");
+
+      function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+      }
+
+      function scrambledLetters(word) {
+        var letters = word.split("");
+        if (word.length < 2) return letters;
+        var out = shuffle(letters);
+        var tries = 0;
+        while (out.join("") === word && tries < 30) { out = shuffle(letters); tries++; }
+        return out;
+      }
+
+      function sound(freqs, dur) {
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          var t = audioCtx.currentTime;
+          freqs.forEach(function (f, i) {
+            var o = audioCtx.createOscillator();
+            var g = audioCtx.createGain();
+            o.type = "sine"; o.frequency.value = f;
+            g.gain.setValueAtTime(0.0001, t + i * 0.09);
+            g.gain.exponentialRampToValueAtTime(0.22, t + i * 0.09 + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + dur);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(t + i * 0.09); o.stop(t + i * 0.09 + dur + 0.05);
+          });
+        } catch (e) { /* sound is a bonus — stay silent if unavailable */ }
+      }
+
+      function confetti() {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var box = document.getElementById("confetti");
+        var colors = ["#ff8a3d", "#ffd23e", "#57c84d", "#4db2ff", "#ef4756", "#f49ac1"];
+        for (var i = 0; i < 42; i++) {
+          var d = document.createElement("div");
+          d.className = "confetto";
+          var size = 7 + Math.random() * 8;
+          d.style.left = (Math.random() * 100) + "vw";
+          d.style.width = size + "px";
+          d.style.height = (size * (0.5 + Math.random())) + "px";
+          d.style.background = colors[i % colors.length];
+          d.style.animationDuration = (1.4 + Math.random() * 1.4) + "s";
+          d.style.animationDelay = (Math.random() * 0.35) + "s";
+          box.appendChild(d);
+          (function (el) { setTimeout(function () { el.remove(); }, 3400); })(d);
+        }
+      }
+
+      function loadWord() {
+        var word = WORDS[idx];
+        solved = false;
+        placed = [];
+        picStage.innerHTML = PICS[word];
+        picStage.classList.remove("pop"); void picStage.offsetWidth; picStage.classList.add("pop");
+        messageEl.textContent = "";
+        messageEl.className = "message";
+        nextBtn.hidden = true;
+        slotsEl.className = "slots";
+        progressLabel.textContent = "Word " + (idx + 1) + " of " + WORDS.length;
+        progressFill.style.width = (idx / WORDS.length * 100) + "%";
+
+        slotsEl.innerHTML = "";
+        for (var i = 0; i < word.length; i++) {
+          var s = document.createElement("div");
+          s.className = "slot";
+          s.setAttribute("role", "button");
+          s.setAttribute("aria-label", "Letter slot " + (i + 1));
+          s.dataset.pos = i;
+          s.addEventListener("click", onSlotTap);
+          slotsEl.appendChild(s);
+        }
+
+        tilesEl.innerHTML = "";
+        scrambledLetters(word).forEach(function (ch, n) {
+          var b = document.createElement("button");
+          b.className = "tile";
+          b.type = "button";
+          b.textContent = ch;
+          b.dataset.id = n;
+          b.setAttribute("aria-label", "Letter " + ch);
+          b.addEventListener("click", onTileTap);
+          tilesEl.appendChild(b);
+        });
+      }
+
+      function renderSlots() {
+        var word = WORDS[idx];
+        var slotNodes = slotsEl.children;
+        for (var i = 0; i < word.length; i++) {
+          var tileId = placed[i];
+          if (tileId === undefined) {
+            slotNodes[i].textContent = "";
+            slotNodes[i].classList.remove("filled");
+          } else {
+            var tile = tilesEl.querySelector('[data-id="' + tileId + '"]');
+            slotNodes[i].textContent = tile ? tile.textContent : "";
+            slotNodes[i].classList.add("filled");
+          }
+        }
+      }
+
+      function onTileTap(e) {
+        if (solved) return;
+        var tile = e.currentTarget;
+        var word = WORDS[idx];
+        if (placed.length >= word.length) return;
+        placed.push(tile.dataset.id);
+        tile.classList.add("used");
+        sound([520], 0.12);
+        renderSlots();
+        if (placed.length === word.length) checkAnswer();
+      }
+
+      function onSlotTap(e) {
+        if (solved) return;
+        var pos = parseInt(e.currentTarget.dataset.pos, 10);
+        if (placed[pos] === undefined) return;
+        var tileId = placed.splice(pos, 1)[0];
+        var tile = tilesEl.querySelector('[data-id="' + tileId + '"]');
+        if (tile) tile.classList.remove("used");
+        renderSlots();
+      }
+
+      function checkAnswer() {
+        var word = WORDS[idx];
+        var guess = placed.map(function (id) {
+          var t = tilesEl.querySelector('[data-id="' + id + '"]');
+          return t ? t.textContent : "";
+        }).join("");
+        if (guess === word) {
+          solved = true;
+          stars++;
+          starCount.textContent = stars;
+          slotsEl.classList.add("win");
+          messageEl.textContent = PRAISE[Math.floor(Math.random() * PRAISE.length)] + " That spells " + word + "!";
+          messageEl.className = "message good";
+          progressFill.style.width = ((idx + 1) / WORDS.length * 100) + "%";
+          sound([523, 659, 784, 1047], 0.28);
+          confetti();
+          speak(word);
+          nextBtn.hidden = false;
+          nextBtn.textContent = (idx === WORDS.length - 1) ? "Finish 🎉" : "Next word →";
+          nextBtn.focus();
+        } else {
+          messageEl.textContent = "Almost! Look at the picture and try again.";
+          messageEl.className = "message try";
+          sound([220, 185], 0.2);
+          slotsEl.classList.add("shake");
+          setTimeout(function () {
+            slotsEl.classList.remove("shake");
+            placed = [];
+            tilesEl.querySelectorAll(".tile.used").forEach(function (t) { t.classList.remove("used"); });
+            renderSlots();
+          }, 500);
+        }
+      }
+
+      function speak(word) {
+        try {
+          if (!("speechSynthesis" in window)) return;
+          window.speechSynthesis.cancel();
+          var u = new SpeechSynthesisUtterance(word.toLowerCase());
+          u.rate = 0.85;
+          window.speechSynthesis.speak(u);
+        } catch (e) { /* speech is a bonus */ }
+      }
+
+      document.getElementById("hearBtn").addEventListener("click", function () { speak(WORDS[idx]); });
+
+      document.getElementById("clearBtn").addEventListener("click", function () {
+        if (solved) return;
+        placed = [];
+        tilesEl.querySelectorAll(".tile.used").forEach(function (t) { t.classList.remove("used"); });
+        messageEl.textContent = "";
+        messageEl.className = "message";
+        renderSlots();
+      });
+
+      document.getElementById("shuffleBtn").addEventListener("click", function () {
+        if (solved) return;
+        placed = [];
+        messageEl.textContent = "";
+        messageEl.className = "message";
+        loadTilesOnly();
+        renderSlots();
+      });
+
+      function loadTilesOnly() {
+        var word = WORDS[idx];
+        tilesEl.innerHTML = "";
+        scrambledLetters(word).forEach(function (ch, n) {
+          var b = document.createElement("button");
+          b.className = "tile";
+          b.type = "button";
+          b.textContent = ch;
+          b.dataset.id = n;
+          b.setAttribute("aria-label", "Letter " + ch);
+          b.addEventListener("click", onTileTap);
+          tilesEl.appendChild(b);
+        });
+      }
+
+      nextBtn.addEventListener("click", function () {
+        if (idx === WORDS.length - 1) { showFinish(); return; }
+        idx++;
+        loadWord();
+      });
+
+      function showFinish() {
+        gameCard.hidden = true;
+        finishCard.hidden = false;
+        var starSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f5b942" d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>';
+        var row = "";
+        for (var i = 0; i < Math.min(stars, 12); i++) row += starSvg;
+        document.getElementById("finishStars").innerHTML = row;
+        document.getElementById("finishText").textContent =
+          "You unscrambled all " + WORDS.length + " words and earned " + stars + (stars === 1 ? " star" : " stars") + ". Great job!";
+        progressFill.style.width = "100%";
+        progressLabel.textContent = "All done!";
+        sound([523, 659, 784, 1047, 1319], 0.3);
+        confetti();
+        setTimeout(confetti, 450);
+      }
+
+      document.getElementById("againBtn").addEventListener("click", function () {
+        idx = 0; stars = 0;
+        starCount.textContent = "0";
+        finishCard.hidden = true;
+        gameCard.hidden = false;
+        loadWord();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (solved || gameCard.hidden) return;
+        if (e.key === "Backspace") {
+          if (placed.length) {
+            var tileId = placed.pop();
+            var tile = tilesEl.querySelector('[data-id="' + tileId + '"]');
+            if (tile) tile.classList.remove("used");
+            renderSlots();
+          }
+          return;
+        }
+        var ch = e.key.toUpperCase();
+        if (/^[A-Z]$/.test(ch)) {
+          var free = tilesEl.querySelectorAll(".tile:not(.used)");
+          for (var i = 0; i < free.length; i++) {
+            if (free[i].textContent === ch) { free[i].click(); break; }
+          }
+        }
+      });
+
+      loadWord();
+    </script>
+  </body>
+</html>
