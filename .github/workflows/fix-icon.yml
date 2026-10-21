@@ -1,0 +1,16 @@
+name: Fix icon path
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sed -i 's|href="/apple-touch-icon.png"|href="/word-scramble-game/apple-touch-icon.png"|' index.html
+          git config user.name "perlatherapygames"
+          git config user.email "heyitsperla622@gmail.com"
+          git add index.html
+          git commit -m "Fix apple-touch-icon path" || echo "no changes"
+          git push
